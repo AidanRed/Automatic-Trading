@@ -1,0 +1,2 @@
+def interpret(*args):
+    pass
