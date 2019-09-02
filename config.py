@@ -1,21 +1,21 @@
 import base64
-import os
+from os.path import exists
 
 
 class ConfigFile(object):
-    def __init__(self, path, defaults={}, seperator="="):
-        if not os.path.exists(path):
+    def __init__(self, path, defaults={}, separator="="):
+        if not exists(path):
             with open(path, "w") as f:
                 f.write("")
 
         self.path = path
-        self.seperator = seperator
+        self.separator = separator
 
         changed = False
-        self.data = self.load_values()
+        self._data = self.load_values()
         for key, value in defaults.items():
-            if key not in self.data:
-                self.data[key] = value
+            if key not in self._data:
+                self._data[key] = value
                 changed = True
 
         if changed:
@@ -34,7 +34,7 @@ class ConfigFile(object):
                 if line == "":
                     continue
 
-                sep_index = line.find(self.seperator)
+                sep_index = line.find(self.separator)
                 if sep_index == -1:
                     continue
 
@@ -52,11 +52,20 @@ class ConfigFile(object):
 
     def sync(self):
         to_write = ""
-        for key, value in self.data.items():
-            to_write = f"{to_write}{key} {self.seperator} {value}\n"
+        for key, value in self._data.items():
+            to_write = f"{to_write}{key} {self.separator} {value}\n"
 
         with open(self.path, "w") as f:
             f.write(to_write)
+
+    def keys(self):
+        return self._data.keys()
+
+    def items(self):
+        return self._data.items()
+
+    def __contains__(self, item):
+        return item in self.keys()
 
     def __getitem__(self, key):
         try:
@@ -65,10 +74,10 @@ class ConfigFile(object):
         except KeyError:
             the_function = lambda x: x
 
-        return the_function(self.data[key])
+        return the_function(self._data[key])
 
     def __setitem__(self, key, value):
-        self.data[key] = value
+        self._data[key] = value
 
 
 default_values = {"public_key": "None", "private_key": "None", "nodejs_executable":"C:\Program Files\\nodejs\\node.exe"}

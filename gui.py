@@ -3,27 +3,25 @@ FIXME: Profit calculations need to account for fees for both buying and selling 
 """
 from appJar import gui
 from collections import namedtuple
-from btcmarket_api import Market, parse_json_string
+from .btcmarkets_api import AuthenticatedMarket
 import sys
 import time
 import atexit
 from subprocess import PIPE, Popen
-import ws
-from config import MY_ACCOUNT
+from . import ws
+from .config import MY_ACCOUNT
+from .globals import TradeData
 
 ON_POSIX = 'posix' in sys.builtin_module_names
 
 DIVISOR_TIME = 1000
 DIVISOR_INSTRUMENT = 100000000
 
-m = Market()
+m = AuthenticatedMarket()
 
 app = gui("ProfitCO", "300x300")
 app.setSticky("new")
 app.setExpand("both")
-
-
-ChainTrade = namedtuple("ChainTrade", ["id", "currency", "instrument", "orderSide", "price", "volume", "fee", "completionTime"])
 
 
 def readable_time(the_time):
@@ -41,9 +39,9 @@ def format_trades(trades):
             continue
 
         total_fee = sum([fee["fee"] for fee in trade["trades"]]) / DIVISOR_INSTRUMENT
-        the_trades.append(ChainTrade(trade["id"], trade["currency"], trade["instrument"], trade["orderSide"],
-                                     trade["price"] / DIVISOR_INSTRUMENT, trade["volume"] / DIVISOR_INSTRUMENT, total_fee,
-                                     trade_completion_time(trade)))
+        the_trades.append(TradeData(trade["id"], trade["currency"], trade["instrument"], trade["orderSide"],
+                                    trade["price"] / DIVISOR_INSTRUMENT, trade["volume"] / DIVISOR_INSTRUMENT, total_fee,
+                                    trade_completion_time(trade)))
 
     return the_trades
 
@@ -99,7 +97,7 @@ def calculate_profit(initial_price, current_quantity, current_price, instrument=
 
 
 def update_calculations(ticker_amount, instrument):
-    values = parse_json_string(ticker_amount)
+    values = AuthenticatedMarket.parse_json_string(ticker_amount)
 
     price = float(values["lastPrice"]) / DIVISOR_INSTRUMENT
 
